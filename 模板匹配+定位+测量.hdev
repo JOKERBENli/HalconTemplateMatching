@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<hdevelop file_version="1.2" halcon_version="22.11.0.0">
+<hdevelop file_version="1.2" halcon_version="24.11.1.0">
 <procedure name="main">
 <interface/>
 <body>
-<l>* 模板匹配定位+引脚间距测量及个数统计</l>
-<l>* 1、找到图像中具有相同特征区域这个图像(模板区域)</l>
-<l>* 2、把该图像作为定位模板，并找到测试区域</l>
-<l>* 3、根据模板来匹配待测图像区域并进行定位。</l>
-<l>* 4、开始找到出待测试区域(图像倾斜幅度变动)</l>
-<l>* 5、把待测试区域对应模板的测试区域进行仿射变换，使其与测试区域进行重叠</l>
-<l>* 6、开始测量引脚间距及统计对应个数</l>
+<c>* 模板匹配定位+引脚间距测量及个数统计</c>
+<c>* 1、找到图像中具有相同特征区域这个图像(模板区域)</c>
+<c>* 2、把该图像作为定位模板，并找到测试区域</c>
+<c>* 3、根据模板来匹配待测图像区域并进行定位。</c>
+<c>* 4、开始找到出待测试区域(图像倾斜幅度变动)</c>
+<c>* 5、把待测试区域对应模板的测试区域进行仿射变换，使其与测试区域进行重叠</c>
+<c>* 6、开始测量引脚间距及统计对应个数</c>
 <c>** 采集图像(使用相机来实时采集，而这里就是使用提供的检测的图片列表)</c>
 <l>list_files ('./', 'files', Files)</l>
 <c>** 使用正则表达式筛选对应图像</c>
@@ -33,14 +33,17 @@
 <l>* dev_set_draw ('margin')</l>
 <l>* dev_set_line_width (2)</l>
 <c>** 生成区域跟随</c>
-<l>* gen_rectangle2 (ROI_Check, 160, 302, 0, 160, 7)</l>
+<l>gen_rectangle2 (ROI_Check, 160, 302, 0, 160, 7)</l>
 <c>** 生产XLD跟随</c>
 <l>gen_rectangle2_contour_xld (Rectangle_XLD, 140, 302, 0, 160, 7)</l>
 <c>************************** 2、开始进行模板定位测量 *************************</c>
 <c>** 获取窗口句柄</c>
 <l>dev_get_window (WindowHandle)</l>
+<c></c>
 <c>** 创建仿射变换矩阵</c>
 <l>hom_mat2d_identity (HomMat2DIdentity)</l>
+<c></c>
+<l>set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
 <l>for Index := 0 to |ImageFiles|-1 by 1</l>
 <c>    ** 读取带测量的图像</c>
 <l>    read_image (Image, ImageFiles[Index])</l>
@@ -51,6 +54,9 @@
 <l>    hom_mat2d_rotate (HomMat2DTranslate, Angle, Row1, Column1, HomMat2DRotate)</l>
 <c>    ** 仿射变换模板的轮廓到对应图像位置</c>
 <l>    affine_trans_contour_xld (ModelContours, ContoursAffineTrans, HomMat2DRotate)</l>
+<c>    </c>
+<c>    </c>
+<c>    </c>
 <c>    ** 进行跟随区域及轮廓仿射变换,刚体变换矩阵(旋转过程中必须固定一个点进行操作)</c>
 <l>    vector_angle_to_rigid (Row, Column, 0, Row1, Column1, Angle, HomMat2D)</l>
 <c>    ** 仿射变换跟随轮廓()</c>
@@ -65,7 +71,35 @@
 <l>    disp_line (WindowHandle, RowEdgeFirst-8*cos(Angle), ColumnEdgeFirst-8*sin(Angle), RowEdgeFirst+8*cos(Angle), ColumnEdgeFirst+8*sin(Angle))</l>
 <l>    disp_line (WindowHandle, RowEdgeSecond-8*cos(Angle), ColumnEdgeSecond-8*sin(Angle), RowEdgeSecond+8*cos(Angle), ColumnEdgeSecond+8*sin(Angle))</l>
 <c>    </c>
+<c>    *下引角</c>
+<c>    *仿射变换跟随2,使用hom_mat2d_translate,hom_mat2d_rotate,affine_trans_pixel</c>
+<c>    *先平移矩阵,再旋转矩阵.基于0,0点</c>
+<l>    hom_mat2d_translate (HomMat2DIdentity, Row1+104, Column1+6, HomMat2DTranslate1)</l>
+<l>    hom_mat2d_rotate (HomMat2DTranslate1, Angle, Row1, Column1, HomMat2DRotate1)</l>
+<l>    affine_trans_pixel (HomMat2DRotate1, 0, 0, RowTrans, ColTrans)</l>
+<l>    gen_rectangle2_contour_xld (Rectangle1, RowTrans, ColTrans, Angle,162, 7)</l>
+<c>    *测量2</c>
+<l>    gen_measure_rectangle2 ( RowTrans, ColTrans, Angle, 162, 7, Width, Height, 'nearest_neighbor', MeasureHandle1)</l>
+<l>    measure_pairs (Image, MeasureHandle1, 3, 50, 'all', 'all', RowEdgeFirst1, ColumnEdgeFirst1, AmplitudeFirst1, RowEdgeSecond1, ColumnEdgeSecond1, AmplitudeSecond1, IntraDistance1, InterDistance1)</l>
+<l>    disp_line (WindowHandle, RowEdgeFirst1-8*cos(Angle), ColumnEdgeFirst1-8*sin(Angle), RowEdgeFirst1+8*cos(Angle), ColumnEdgeFirst1+8*sin(Angle))</l>
+<l>    disp_line (WindowHandle, RowEdgeSecond1-8*cos(Angle), ColumnEdgeSecond1-8*sin(Angle), RowEdgeSecond1+8*cos(Angle), ColumnEdgeSecond1+8*sin(Angle))</l>
+<l>    distancel:=mean([IntraDistance,IntraDistance1])</l>
+<l>    distancelMin:=min([IntraDistance,IntraDistance1])</l>
+<l>    dev_disp_text ('引角间隔平均值为:'+distancel$'0.4'+'px', 'window', 12, 12, 'black', [], [])</l>
+<l>    dev_disp_text ('引角间隔最小为:'+distancelMin$'0.4'+'px', 'window', 42, 12, 'black', [], [])</l>
+<l>    dev_disp_text ('引角总数为'+|[IntraDistance,IntraDistance1]|, 'window', 72, 12, 'black', [], [])</l>
+<c>    </c>
+<c>    *仿射变换3.区域基原位置变换,相对的平移矩阵,再旋转矩阵.</c>
+<l>    hom_mat2d_translate (HomMat2DIdentity, Row1-Row, Column1-Column, HomMat2DTranslate2)</l>
+<l>    hom_mat2d_rotate (HomMat2DTranslate2, Angle, Row1, Column1, HomMat2DRotate2)</l>
+<l>    affine_trans_region (ROI_Check, ROI_001, HomMat2DRotate2, 'nearest_neighbor')</l>
+<c>    *及时释放句柄空间</c>
+<l>    close_measure (MeasureHandle)</l>
+<l>    close_measure (MeasureHandle1)</l>
+<l>    dev_display (ROI_001)</l>
+<l>    stop ()</l>
 <l>endfor</l>
+<l>clear_shape_model (ModelID)</l>
 <c></c>
 </body>
 <docu id="main">
