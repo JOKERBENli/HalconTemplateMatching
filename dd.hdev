@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="22.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>*采图</c>
+<l>list_files ('./', ['files','follow_links'], ImageFiles)</l>
+<l>tuple_regexp_select (ImageFiles, ['\\.(tif|tiff|gif|bmp|jpg|jpeg|jp2|png|pcx|pgm|ppm|pbm|xwd|ima|hobj)$','ignore_case'], ImageFiles)</l>
+<l>read_image (Image, ImageFiles[0])</l>
+<l>get_image_pointer1 (Image, Pointer, Type, Width, Height)</l>
+<c>*获取模板</c>
+<l>gen_rectangle1 (ROI_0, 196.724, 187.256, 290.883, 404.241)</l>
+<l>area_center (ROI_0, Area, Row, Column) //获取中心的行列坐标</l>
+<l>reduce_domain (Image, ROI_0, ImageReduced)//单区域抠图</l>
+<c>*生成模板</c>
+<l>create_shape_model (ImageReduced, 4, 0, 6.29, 'auto', 'none', 'use_polarity', [25,40], 10, ModelID)</l>
+<l>get_shape_model_contours (ModelContours, ModelID, 1) //获取模板</l>
+<l>hom_mat2d_identity (HomMat2DIdentity)//单位矩阵</l>
+<l>gen_rectangle2 (ROI_000, 160, 302, 0, 163, 7) //区域跟随</l>
+<l>gen_rectangle2_contour_xld (Rectangle, 140, 302, 0, 163, 7) //XLD跟随</l>
+<l>dev_get_window (WindowHandle)</l>
+<l>dev_set_line_width (2)</l>
+<l>set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>for Index := 0 to |ImageFiles| - 1 by 1</l>
+<l>    read_image (Image, ImageFiles[Index])</l>
+<l>    find_shape_model (Image, ModelID, 0, rad(360), 0.5, 1, 0.5, 'least_squares', 0, 0.7, Row1, Column1, Angle, Score)</l>
+<c>    *模板仿射变换</c>
+<l>    hom_mat2d_translate (HomMat2DIdentity,Row1, Column1, HomMat2DTranslate)//平移矩阵</l>
+<l>    hom_mat2d_rotate (HomMat2DTranslate, Angle, Row1, Column1, HomMat2DRotate)//旋转矩阵</l>
+<l>    affine_trans_contour_xld (ModelContours, ContoursAffineTrans, HomMat2DRotate)</l>
+<c>    *跟随1,使用vector_angle_to_rigid算子 刚体变换</c>
+<l>    vector_angle_to_rigid ( Row, Column, 0, Row1, Column1, Angle, HomMat2D)</l>
+<l>    affine_trans_contour_xld (Rectangle, ContoursAffineTrans1, HomMat2D)</l>
+<l>    area_center_xld (ContoursAffineTrans1, Area1, Row2, Column2, PointOrder)</l>
+<l>    dev_display (Image)</l>
+<l>    dev_display (ContoursAffineTrans)</l>
+<l>*     dev_display (RegionAffineTrans) //区域</l>
+<l>    dev_display (ContoursAffineTrans1)</l>
+<c>    *测量1</c>
+<l>    gen_measure_rectangle2 (Row2, Column2,Angle, 162, 7, Width, Height, 'nearest_neighbor', MeasureHandle)</l>
+<l>    measure_pairs (Image, MeasureHandle, 3, 50, 'all', 'all', RowEdgeFirst, ColumnEdgeFirst, AmplitudeFirst, RowEdgeSecond, ColumnEdgeSecond, AmplitudeSecond, IntraDistance, InterDistance)</l>
+<c>    *显示</c>
+<l>    disp_line (WindowHandle, RowEdgeFirst-8*cos(Angle), ColumnEdgeFirst-8*sin(Angle), RowEdgeFirst+8*cos(Angle), ColumnEdgeFirst+8*sin(Angle))</l>
+<l>    disp_line (WindowHandle, RowEdgeSecond-8*cos(Angle), ColumnEdgeSecond-8*sin(Angle), RowEdgeSecond+8*cos(Angle), ColumnEdgeSecond+8*sin(Angle))</l>
+<c>    *下引角</c>
+<c>    *仿射变换跟随2,使用hom_mat2d_translate,hom_mat2d_rotate,affine_trans_pixel</c>
+<c>    *先平移矩阵,再旋转矩阵.基于0,0点</c>
+<l>    hom_mat2d_translate (HomMat2DIdentity, Row1+104, Column1+6, HomMat2DTranslate1)</l>
+<l>    hom_mat2d_rotate (HomMat2DTranslate1, Angle, Row1, Column1, HomMat2DRotate1)</l>
+<l>    affine_trans_pixel (HomMat2DRotate1, 0, 0, RowTrans, ColTrans)</l>
+<l>    gen_rectangle2_contour_xld (Rectangle1, RowTrans, ColTrans, Angle,162, 7)</l>
+<c>    *测量2</c>
+<l>    gen_measure_rectangle2 ( RowTrans, ColTrans, Angle, 162, 7, Width, Height, 'nearest_neighbor', MeasureHandle1)</l>
+<l>    measure_pairs (Image, MeasureHandle1, 3, 50, 'all', 'all', RowEdgeFirst1, ColumnEdgeFirst1, AmplitudeFirst1, RowEdgeSecond1, ColumnEdgeSecond1, AmplitudeSecond1, IntraDistance1, InterDistance1)</l>
+<l>    disp_line (WindowHandle, RowEdgeFirst1-8*cos(Angle), ColumnEdgeFirst1-8*sin(Angle), RowEdgeFirst1+8*cos(Angle), ColumnEdgeFirst1+8*sin(Angle))</l>
+<l>    disp_line (WindowHandle, RowEdgeSecond1-8*cos(Angle), ColumnEdgeSecond1-8*sin(Angle), RowEdgeSecond1+8*cos(Angle), ColumnEdgeSecond1+8*sin(Angle))</l>
+<l>    distancel:=mean([IntraDistance,IntraDistance1])</l>
+<l>    distancelMin:=min([IntraDistance,IntraDistance1])</l>
+<l>    dev_disp_text ('引角间隔平均值为:'+distancel$'0.4'+'px', 'window', 12, 12, 'black', [], [])</l>
+<l>    dev_disp_text ('引角间隔最小为:'+distancelMin$'0.4'+'px', 'window', 42, 12, 'black', [], [])</l>
+<l>    dev_disp_text ('引角总数为'+|[IntraDistance,IntraDistance1]|, 'window', 72, 12, 'black', [], [])</l>
+<c>    </c>
+<c>    *仿射变换3.区域基原位置变换,相对的平移矩阵,再旋转矩阵.</c>
+<l>    hom_mat2d_translate (HomMat2DIdentity, Row1-Row, Column1-Column, HomMat2DTranslate2)</l>
+<l>    hom_mat2d_rotate (HomMat2DTranslate2, Angle, Row1, Column1, HomMat2DRotate2)</l>
+<l>    affine_trans_region (ROI_000, ROI_001, HomMat2DRotate2, 'nearest_neighbor')</l>
+<c>    *及时释放句柄空间</c>
+<l>    close_measure (MeasureHandle)</l>
+<l>    close_measure (MeasureHandle1)</l>
+<l>    dev_display (ROI_001)</l>
+<l>    stop ()</l>
+<l>endfor</l>
+<l>clear_shape_model (ModelID)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
