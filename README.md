@@ -37,9 +37,10 @@
 
 ### 四、搭建界面编写C#逻辑
 ![alt text](image-5.png)  
-导入halcon依赖,halcondotnet,在bin\dotnet35目录下
-可视化窗口显示
-''' 
+导入halcon依赖,halcondotnet,在bin\dotnet35目录下  
+可视化窗口显示  
+```
+
 private void Form1_Load(object sender, EventArgs e)
 {
     //创建一个halcon控件对象
@@ -51,6 +52,6 @@ private void Form1_Load(object sender, EventArgs e)
 
 
 } 
-'''
+```
 
 
