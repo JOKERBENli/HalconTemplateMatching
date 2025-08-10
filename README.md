@@ -35,23 +35,5 @@
 ''' .+\.Dispose\(\);
 删除带dispose的
 
-### 四、搭建界面编写C#逻辑
-![alt text](image-5.png)  
-导入halcon依赖,halcondotnet,在bin\dotnet35目录下  
-可视化窗口显示  
-```
-
-private void Form1_Load(object sender, EventArgs e)
-{
-    //创建一个halcon控件对象
-    hwControl = new HSmartWindowControl();
-    //设置控件以填充方式放入到父容器中
-    hwControl.Dock = DockStyle.Fill;
-    //添加到对应容器中
-    panel1.Controls.Add(hwControl);
-
-
-} 
-```
 
 
